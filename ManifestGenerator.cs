@@ -24,16 +24,19 @@ public static class ManifestGenerator
 
 		// Load old manifest
 		JObject manifestJson;
+		JObject buildsJson;
 		try
 		{
 			string rawJson = File.ReadAllText(MANIFEST_FILEPATH);
 			manifestJson = JObject.Parse(rawJson);
-
+			buildsJson = (JObject) manifestJson["builds"];
 		} catch (FileNotFoundException e) {
 			if (ALLOW_NEW_FILE)
 			{
 				Console.WriteLine("No existing json, creating...");
 				manifestJson = new JObject();
+				buildsJson = new JObject();
+				manifestJson["builds"] = buildsJson;
 			} else {
 				Console.WriteLine("No existing json found -- exitting.  (First run should be done with ALLOW_NEW_FILE set to true)");
 				return;
@@ -47,7 +50,7 @@ public static class ManifestGenerator
 		try
 		{
 			var buildJson = GenerateJsonForBuild(targetSHA);
-			manifestJson[targetSHA] = buildJson;
+			buildsJson[targetSHA] = buildJson;
 		} catch (Exception e) {
 			Console.WriteLine("Error generating json for SHA: " + e.Message);
 			return;
