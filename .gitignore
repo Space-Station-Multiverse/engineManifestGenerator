@@ -1,3 +1,6 @@
 bin
 obj
 manifest.json
+ssmvEngine.key
+.gitignore
+ssmvEngine.public

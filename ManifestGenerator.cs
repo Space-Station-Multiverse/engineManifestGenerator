@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using NSec.Cryptography;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
@@ -12,6 +13,7 @@ public static class ManifestGenerator
 	public const bool ALLOW_NEW_FILE = true; // enable for first run
 	public const string BUILDS_PATH = "/home/ss14/ssmvEngine/release/";
 	public const string BUILDS_URL = "https://cdn.spacestationmultiverse.com/ssmv-engine-builds/";
+	private const string PRIVATE_KEY_PATH = "ssmvEngine.key";
 
 	public static void Main(string[] args)
 	{
@@ -77,7 +79,7 @@ public static class ManifestGenerator
 				var fileInfo = new FileInfo(path);
 				platformJson["url"] = BUILDS_URL + version + '/' + fileInfo.Name;
 				platformJson["sha256"] = SHA256CheckSum(path);
-				platformJson["sig"] = "TODO";
+				platformJson["sig"] = GenerateSignature(path);
 				jsonPlatforms[platform] = platformJson; 
 			}
 		}
@@ -100,4 +102,34 @@ public static class ManifestGenerator
 				//return Convert.ToBase64String(SHA256.ComputeHash(fileStream));
 		}
 	}
+
+	private static string GenerateSignature(string filePath)
+	{
+		var privateKeyFile = File.ReadAllBytes(PRIVATE_KEY_PATH);
+		var key = Key.Import(SignatureAlgorithm.Ed25519, privateKeyFile, KeyBlobFormat.PkixPrivateKeyText);
+
+		var fileContents = File.ReadAllBytes(filePath);
+        var signature = SignatureAlgorithm.Ed25519.Sign(key, fileContents);
+        return BitConverter.ToString(signature).Replace("-", "");
+	}
+
+	/// <summary>
+	/// First-time setup of key signing pair for engine build signing
+	/// </summary>
+	/*
+	private static void GenerateSigningKeyPair()
+	{
+		// select the Ed25519 signature algorithm
+		var algorithm = SignatureAlgorithm.Ed25519;
+
+		// create a new key pair
+		var policyAllowExport = new KeyCreationParameters();
+		policyAllowExport.ExportPolicy = KeyExportPolicies.AllowPlaintextExport;
+		using var key = Key.Create(algorithm, policyAllowExport);
+
+		// generate some data to be signed
+		File.WriteAllBytes("ssmvEngine.key", key.Export(KeyBlobFormat.PkixPrivateKeyText));
+		File.WriteAllBytes("ssmvEngine.public", key.Export(KeyBlobFormat.PkixPublicKeyText));
+	}
+	*/
 }
